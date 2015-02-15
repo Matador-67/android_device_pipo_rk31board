@@ -1,0 +1,47 @@
+From b17a1dca40718b129181197b392793f55aaa874a Mon Sep 17 00:00:00 2001
+From: netlars <netlars@gmx.de>
+Date: Sun, 8 Jun 2014 15:09:30 +0200
+Subject: [PATCH 1/1] choose module version itself
+
+Change-Id: I0cb0be52638b6134c5b55ba234c49df4ffd48abf
+---
+ init/builtins.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/init/builtins.c b/init/builtins.c
+index 4070578..1cbaf9d 100644
+--- a/init/builtins.c
++++ b/init/builtins.c
+@@ -32,6 +32,7 @@
+ #include <sys/resource.h>
+ #include <sys/wait.h>
+ #include <linux/loop.h>
++#include <sys/utsname.h>
+ #include <cutils/partition_utils.h>
+ #include <cutils/android_reboot.h>
+ #include <sys/system_properties.h>
+@@ -127,7 +128,20 @@ static int insmod(const char *filename, char *options)
+     void *module;
+     unsigned size;
+     int ret;
+-
++    struct utsname name;
++    char filename_release[PATH_MAX];
++
++    memset(&name, 0, sizeof(name));
++    ret = uname(&name);
++    if (ret == 0 && name.release) {
++        /* try insmod filename.x.x.x */
++        memset(filename_release, 0, sizeof(filename_release));
++        strncat(filename_release, filename, sizeof(filename_release) - 1);
++        strncat(filename_release, ".", sizeof(filename_release) - 1);
++        strncat(filename_release, name.release, sizeof(filename_release) - 1);
++        module = read_file(filename_release, &size);
++    }
++    if (!module)
+     module = read_file(filename, &size);
+     if (!module)
+         return -1;
+-- 
+1.9.1
+

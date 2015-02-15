@@ -1,0 +1,11 @@
+android_device_rockchip_rk31board
+=================================
+
+CM-11.0
+
+for this build you need
+
+android_device_rockchip_rk31board
+android_hardware_rk29
+
+

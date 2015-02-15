@@ -1,0 +1,55 @@
+From 2556cc8b5631758d0c61d522d562c9e5d5197361 Mon Sep 17 00:00:00 2001
+From: netlars <netlars@gmx.de>
+Date: Sun, 10 Aug 2014 16:31:04 +0200
+Subject: [PATCH 1/2] add hw decoding jpeg
+
+Change-Id: I919921a78ebcb016f771d567acedfd68135875f3
+---
+ .../android/graphics/CreateJavaOutputStreamAdaptor.cpp    | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/core/jni/android/graphics/CreateJavaOutputStreamAdaptor.cpp b/core/jni/android/graphics/CreateJavaOutputStreamAdaptor.cpp
+index da8f083..aa8ff2f 100644
+--- a/core/jni/android/graphics/CreateJavaOutputStreamAdaptor.cpp
++++ b/core/jni/android/graphics/CreateJavaOutputStreamAdaptor.cpp
+@@ -6,8 +6,11 @@
+ #include "SkTypes.h"
+ #include "Utils.h"
+ 
++#define RETURN_NULL_IF_NULL(value) \
++    do { if (!(value)) { SkASSERT(0); return NULL; } } while (false)
+ static jmethodID    gInputStream_readMethodID;
+ static jmethodID    gInputStream_skipMethodID;
++static jmethodID    gInputStream_markSupportMethodID;
+ 
+ /**
+  *  Wrapper for a Java InputStream.
+@@ -117,6 +120,10 @@ private:
+         return (size_t)skipped;
+     }
+ 
++    virtual bool markSupport(){
++	JNIEnv * env = fEnv;		
++	return env->CallBooleanMethod(fJavaInputStream, gInputStream_markSupportMethodID) == JNI_TRUE;
++    }
+     JNIEnv*     fEnv;
+     jobject     fJavaInputStream;   // the caller owns this object
+     jbyteArray  fJavaByteArray;     // the caller owns this object
+@@ -127,6 +134,14 @@ private:
+ 
+ SkStream* CreateJavaInputStreamAdaptor(JNIEnv* env, jobject stream,
+                                        jbyteArray storage) {
++    static bool gInited;
++    if (!gInited) {
++	jclass inputStream_Clazz = env->FindClass("java/io/InputStream");
++        RETURN_NULL_IF_NULL(inputStream_Clazz);
++	gInputStream_markSupportMethodID = env->GetMethodID(inputStream_Clazz,"markSupported","()Z");
++	RETURN_NULL_IF_NULL(gInputStream_markSupportMethodID);
++        gInited = true;
++    }
+     return new JavaInputStreamAdaptor(env, stream, storage);
+ }
+ 
+-- 
+1.9.1
+

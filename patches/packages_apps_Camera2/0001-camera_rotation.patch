@@ -1,0 +1,95 @@
+From a86386d54e3aa454ab90c922268fea9f5ddc1093 Mon Sep 17 00:00:00 2001
+From: netlars <netlars@gmx.de>
+Date: Wed, 13 Aug 2014 09:18:01 +0200
+Subject: [PATCH] add camera rotation via build.prop
+
+Change-Id: I00d041a4da32e25d550e7ad235dbd78c5f83a74a
+---
+ src/com/android/camera/VideoModule.java     |  8 ++++++--
+ src/com/android/camera/util/CameraUtil.java | 12 ++++++++----
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/src/com/android/camera/VideoModule.java b/src/com/android/camera/VideoModule.java
+index e695494..c1969ca 100644
+--- a/src/com/android/camera/VideoModule.java
++++ b/src/com/android/camera/VideoModule.java
+@@ -46,6 +46,7 @@ import android.os.Message;
+ import android.os.SystemProperties;
+ import android.os.ParcelFileDescriptor;
+ import android.os.SystemClock;
++import android.os.SystemProperties;
+ import android.provider.MediaStore;
+ import android.provider.MediaStore.MediaColumns;
+ import android.provider.MediaStore.Video;
+@@ -186,6 +187,9 @@ public class VideoModule implements CameraModule,
+     private VideoUI mUI;
+     private CameraProxy mCameraDevice;
+ 
++    private static final String CAMERA_FRONT_ORIENTATION = "ro.camera.front.orientation";
++    private static final String CAMERA_BACK_ORIENTATION = "ro.camera.back.orientation";
++
+     // The degrees of the device rotated clockwise from its natural orientation.
+     private int mOrientation = OrientationEventListener.ORIENTATION_UNKNOWN;
+ 
+@@ -1429,9 +1433,9 @@ public class VideoModule implements CameraModule,
+         if (mOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
+             CameraInfo info = CameraHolder.instance().getCameraInfo()[mCameraId];
+             if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
+-                rotation = (info.orientation - mOrientation + 360) % 360;
++                rotation = (info.orientation - mOrientation + 360 + SystemProperties.getInt(CAMERA_FRONT_ORIENTATION,0)) % 360;
+             } else {  // back-facing camera
+-                rotation = (info.orientation + mOrientation) % 360;
++                rotation = (info.orientation + mOrientation + SystemProperties.getInt(CAMERA_BACK_ORIENTATION,0)) % 360;
+             }
+         }
+         mMediaRecorder.setOrientationHint(rotation);
+diff --git a/src/com/android/camera/util/CameraUtil.java b/src/com/android/camera/util/CameraUtil.java
+index 9c42194..2103e51 100644
+--- a/src/com/android/camera/util/CameraUtil.java
++++ b/src/com/android/camera/util/CameraUtil.java
+@@ -39,6 +39,7 @@ import android.location.Location;
+ import android.net.Uri;
+ import android.os.Handler;
+ import android.os.ParcelFileDescriptor;
++import android.os.SystemProperties;
+ import android.telephony.TelephonyManager;
+ import android.text.TextUtils;
+ import android.util.DisplayMetrics;
+@@ -118,6 +119,9 @@ public class CameraUtil {
+     public static final String TRUE = "true";
+     public static final String FALSE = "false";
+ 
++    private static final String CAMERA_FRONT_ORIENTATION = "ro.camera.front.orientation";
++    private static final String CAMERA_BACK_ORIENTATION = "ro.camera.back.orientation";
++
+     // Hardware camera key mask
+     private static final int KEY_MASK_CAMERA = 0x20;
+ 
+@@ -596,10 +600,10 @@ public class CameraUtil {
+         Camera.getCameraInfo(cameraId, info);
+         int result;
+         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+-            result = (info.orientation + degrees) % 360;
++            result = (info.orientation + degrees + SystemProperties.getInt(CAMERA_FRONT_ORIENTATION,0)) % 360;
+             result = (360 - result) % 360;  // compensate the mirror
+         } else {  // back-facing
+-            result = (info.orientation - degrees + 360) % 360;
++            result = (info.orientation - degrees + 360 + SystemProperties.getInt(CAMERA_BACK_ORIENTATION,0)) % 360;
+         }
+         return result;
+     }
+@@ -929,9 +933,9 @@ public class CameraUtil {
+         if (orientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
+             CameraInfo info = CameraHolder.instance().getCameraInfo()[cameraId];
+             if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
+-                rotation = (info.orientation - orientation + 360) % 360;
++                rotation = (info.orientation - orientation + 360 + SystemProperties.getInt(CAMERA_FRONT_ORIENTATION,0)) % 360;
+             } else {  // back-facing camera
+-                rotation = (info.orientation + orientation) % 360;
++                rotation = (info.orientation + orientation + SystemProperties.getInt(CAMERA_BACK_ORIENTATION,0)) % 360;
+             }
+         }
+         return rotation;
+-- 
+1.9.1
+
